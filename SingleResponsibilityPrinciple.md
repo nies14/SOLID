@@ -1,126 +1,72 @@
 The single responsibility principle states that a class, module, or function should have only one reason to change, meaning it should do one thing.
 
-The follwoing code violates the single responsibility principle because the class that's responsible for printing the name of the animal also shows the sound it makes and its type of feeding.
+The following code violates the single responsibility principle.
 
 ```csharp
-public class Animal
+public class Book
 {
-    // Properties
-    public string Name { get; set; }
-    public string FeedingType { get; set; }
-    public string SoundMade { get; set; }
+    public string Title { get; set; }
+    public string Author { get; set; }
 
-    // Constructor
-    public Animal(string name, string feedingType, string soundMade)
+    public void PrintBook()
     {
-        Name = name;
-        FeedingType = feedingType;
-        SoundMade = soundMade;
+        Console.WriteLine($"Title: {Title}, Author: {Author}");
     }
 
-    // Methods
-    public void Nomenclature()
+    public void SaveBookToDatabase()
     {
-        Console.WriteLine($"The name of the animal is {Name}");
-    }
-
-    public void Sound()
-    {
-        Console.WriteLine($"{Name} {SoundMade}s");
-    }
-
-    public void Feeding()
-    {
-        Console.WriteLine($"{Name} is a {FeedingType}");
+        // Logic to save book in the database
     }
 }
 
-// Main Program
-public class Program
+```
+Why is this bad?
+The Book class has two responsibilities:
+- Representing the book's data.
+- Managing database operations.
+
+This violates SRP because:
+- If the way books are stored changes (e.g., moving from SQL to a NoSQL database), the Book class needs to be modified.
+- If we decide to change how a book is printed, we also need to update this class.
+
+How to fix it?
+We can refactor the code to follow SRP:
+- Book Class: Responsible for representing book data.
+- BookPrinter Class: Responsible for printing books.
+- BookRepository Class: Responsible for database operations.
+
+```csharp
+public class Book
 {
-    public static void Main(string[] args)
+    public string Title { get; set; }
+    public string Author { get; set; }
+}
+
+public class BookPrinter
+{
+    public void PrintBook(Book book)
     {
-        Animal elephant = new Animal("Elephant", "herbivore", "trumpet");
-        elephant.Nomenclature(); // The name of the animal is Elephant
-        elephant.Sound();        // Elephant trumpets
-        elephant.Feeding();      // Elephant is a herbivore
+        Console.WriteLine($"Title: {book.Title}, Author: {book.Author}");
+    }
+}
+
+public class BookRepository
+{
+    public void SaveBook(Book book)
+    {
+        // Logic to save book in the database
     }
 }
 ```
+Benefits of this approach:
+- The Book class has only one responsibility: storing book data.
+- The BookPrinter handles printing, and changes to the printing logic won’t affect the Book class.
+- The BookRepository handles saving, and changes to database logic won’t affect the Book or BookPrinter.
 
-To fix this, we can create a separate class for the sound and feeding methods like this:
+Real-Life Analogy:
+Think of SRP like a restaurant:
+- The chef cooks the food.
+- The waiter serves the food.
+- The cashier handles payments.
 
-```csharp
-using System;
-
-// Base Animal Class
-public class Animal
-{
-    public string Name { get; set; }
-
-    public Animal(string name)
-    {
-        Name = name;
-    }
-
-    public void Nomenclature()
-    {
-        Console.WriteLine($"The name of the animal is {Name}");
-    }
-}
-
-// Sound Class
-public class Sound
-{
-    public string Name { get; set; }
-    public string SoundMade { get; set; }
-
-    public Sound(string name, string soundMade)
-    {
-        Name = name;
-        SoundMade = soundMade;
-    }
-
-    public void MakeSound()
-    {
-        Console.WriteLine($"{Name} {SoundMade}s");
-    }
-}
-
-// Feeding Class
-public class Feeding
-{
-    public string Name { get; set; }
-    public string FeedingType { get; set; }
-
-    public Feeding(string name, string feedingType)
-    {
-        Name = name;
-        FeedingType = feedingType;
-    }
-
-    public void DescribeFeeding()
-    {
-        Console.WriteLine($"{Name} is a/an {FeedingType}");
-    }
-}
-
-// Main Program
-public class Program
-{
-    public static void Main(string[] args)
-    {
-        // Animal class example
-        Animal animal1 = new Animal("Elephant");
-        animal1.Nomenclature(); // The name of the animal is Elephant
-
-        // Sound class example
-        Sound animalSound1 = new Sound("Elephant", "trumpet");
-        animalSound1.MakeSound(); // Elephant trumpets
-
-        // Feeding class example
-        Feeding animalFeeding1 = new Feeding("Elephant", "herbivore");
-        animalFeeding1.DescribeFeeding(); // Elephant is a/an herbivore
-    }
-}
-```
+If one person does all three jobs, it becomes chaotic and hard to manage. By separating responsibilities, each person focuses on their specific task, making the system efficient and adaptable.

@@ -1,171 +1,99 @@
-The Liskov substitution principle is one of the most important principles to adhere to in object-oriented programming (OOP). The principle states that child classes or subclasses must be substitutable for their parent classes or super classes. In other words, the child class must be able to replace the parent class.
+## Liskov Substitution Principle (LSP)
+The Liskov Substitution Principle (LSP) is the third principle of SOLID, and it states:
+
+Objects of a superclass should be replaceable with objects of its subclasses without affecting the correctness of the program.
+
+In simpler terms, a subclass should be able to stand in for its parent class without breaking the behavior of the program.
+
+### Why is LSP important?
+- It ensures the substitutability of derived classes.
+- It promotes code reusability and robustness by avoiding unexpected behaviors when using subclasses.
+
+### Example: 
+Scenario:
+You have a Book class, and you want to create a specialized subclass called EBook. Let’s see how violating or adhering to LSP affects the design.
+
+### Violating LSP
+Here’s a base Book class and a derived EBook class that violates LSP:
 
 ```csharp
-using System;
-
-// Base Animal class
-class Animal
+public class Book
 {
-    public string Name { get; set; }
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public decimal Price { get; set; }
 
-    public Animal(string name)
+    public virtual void Print()
     {
-        Name = name;
-    }
-
-    public virtual void MakeSound()
-    {
-        Console.WriteLine($"{Name} makes a sound");
+        Console.WriteLine($"Printing the book: {Title}");
     }
 }
 
-// Dog class inheriting from Animal
-class Dog : Animal
+public class EBook : Book
 {
-    public Dog(string name) : base(name) { }
-
-    public override void MakeSound()
+    public override void Print()
     {
-        Console.WriteLine($"{Name} barks");
-    }
-}
-
-// Cat class inheriting from Animal
-class Cat : Animal
-{
-    public Cat(string name) : base(name) { }
-
-    public override void MakeSound()
-    {
-        Console.WriteLine($"{Name} meows");
-    }
-}
-
-// Fish class inherits Animal but breaks the MakeSound contract
-class Fish : Animal
-{
-    public Fish(string name) : base(name) { }
-
-    public override void MakeSound()
-    {
-        throw new InvalidOperationException($"{Name} cannot make a sound!");
-    }
-}
-
-// Utility function to make animal sounds
-void MakeAnimalSound(Animal animal)
-{
-    animal.MakeSound();
-}
-
-// Program entry point
-class Program
-{
-    static void Main(string[] args)
-    {
-        Animal cheetah = new Animal("Cheetah");
-        MakeAnimalSound(cheetah); // Cheetah makes a sound
-
-        Dog dog = new Dog("Jack");
-        MakeAnimalSound(dog); // Jack barks
-
-        Cat cat = new Cat("Khloe");
-        MakeAnimalSound(cat); // Khloe meows
-
-        Fish fish = new Fish("Nemo");
-        try
-        {
-            MakeAnimalSound(fish); // ❌ Exception is thrown here
-        }
-        catch (InvalidOperationException ex)
-        {
-            Console.WriteLine($"Error: {ex.Message}");
-        }
-    }
-
-    static void MakeAnimalSound(Animal animal)
-    {
-        animal.MakeSound();
+        throw new NotImplementedException("EBooks cannot be printed.");
     }
 }
 ```
+### Why does this violate LSP?
+- The EBook class overrides the Print method but throws an exception.
+- If a method works with a Book object and expects to print it, substituting it with an EBook will break the program.
 
-To fix this, a better design would avoid forcing every subclass of Animal to implement MakeSound when it doesn't make sense for certain animals:
+For example:
+```csharp
+public void PrintBookDetails(Book book)
+{
+    book.Print(); // Will throw an exception if 'book' is an 'EBook'
+}
+
+// Usage
+Book ebook = new EBook();
+PrintBookDetails(ebook); // Throws NotImplementedException
+```
+
+### Fixing the Violation (Adhering to LSP)
+To follow LSP, ensure that the EBook class behaves in a way that is consistent with the expectations of the Book class. A better design is to separate the responsibilities of physical books and e-books using proper inheritance.
 
 ```csharp
-using System;
-
-// Base Animal class
-abstract class Animal
+// Base class
+public abstract class Book
 {
-    public string Name { get; set; }
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public decimal Price { get; set; }
 
-    public Animal(string name)
+    public abstract void DisplayDetails();
+}
+
+// PhysicalBook class
+public class PhysicalBook : Book
+{
+    public override void DisplayDetails()
     {
-        Name = name;
+        Console.WriteLine($"Physical Book: {Title} by {Author}");
+    }
+
+    public void Print()
+    {
+        Console.WriteLine($"Printing the book: {Title}");
     }
 }
 
-// Interface for sound-making animals
-interface ISoundMaking
+// EBook class
+public class EBook : Book
 {
-    void MakeSound();
-}
+    public string DownloadLink { get; set; }
 
-// Dog class
-class Dog : Animal, ISoundMaking
-{
-    public Dog(string name) : base(name) { }
-
-    public void MakeSound()
+    public override void DisplayDetails()
     {
-        Console.WriteLine($"{Name} barks");
-    }
-}
-
-// Cat class
-class Cat : Animal, ISoundMaking
-{
-    public Cat(string name) : base(name) { }
-
-    public void MakeSound()
-    {
-        Console.WriteLine($"{Name} meows");
-    }
-}
-
-// Fish class
-class Fish : Animal
-{
-    public Fish(string name) : base(name) { }
-
-    // No MakeSound method
-}
-
-// Utility function
-void MakeAnimalSound(ISoundMaking animal)
-{
-    animal.MakeSound();
-}
-
-// Program entry point
-class Program
-{
-    static void Main(string[] args)
-    {
-        Dog dog = new Dog("Jack");
-        MakeAnimalSound(dog); // Jack barks
-
-        Cat cat = new Cat("Khloe");
-        MakeAnimalSound(cat); // Khloe meows
-
-        Fish fish = new Fish("Nemo");
-        Console.WriteLine($"{fish.Name} swims silently.");
+        Console.WriteLine($"E-Book: {Title} by {Author}");
     }
 
-    static void MakeAnimalSound(ISoundMaking animal)
+    public void Download()
     {
-        animal.MakeSound();
+        Console.WriteLine($"Downloading the e-book from: {DownloadLink}");
     }
 }
 ```

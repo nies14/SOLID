@@ -1,142 +1,125 @@
-The principle states that high-level modules should not depend on low-level modules. Instead, they should both depend on abstractions. Additionally, abstractions should not depend on details, but details should depend on abstractions.
+## Dependency Inversion Principle (DIP)
+The principle states that high-level modules should not depend on low-level modules. Instead, they should both depend on abstractions. Additionally, abstractions should not depend on details, but details should depend on abstractions. In simpler terms:
+- Classes should depend on interfaces or abstract classes rather than concrete implementations.
+- This reduces coupling and makes the system more flexible and testable.
 
-The following code violates the dependency inversion principle:
+### Why is DIP important?
+- Promotes loose coupling between classes.
+- Makes it easier to swap implementations without changing the dependent code.
+- Improves code maintainability and testability.
+
+### Example:
+Scenario:
+You’re building a system that saves book details to a storage system (e.g., a database or a file).
+
+### Violating DIP
+Here’s a design where the BookManager class directly depends on a concrete implementation of a DatabaseBookSaver class.
 
 ```csharp
-using System;
-using System.Collections.Generic;
-
-// Dog class
-class Dog
+// Low-level class: Handles database operations
+public class DatabaseBookSaver
 {
-    public string Name { get; set; }
-
-    public Dog(string name)
+    public void Save(Book book)
     {
-        Name = name;
-    }
-
-    public void Bark()
-    {
-        Console.WriteLine("woof! woof!! woof!!");
+        Console.WriteLine($"Saving {book.Title} to the database.");
     }
 }
 
-// Cat class
-class Cat
+// Book class
+public class Book
 {
-    public string Name { get; set; }
-
-    public Cat(string name)
-    {
-        Name = name;
-    }
-
-    public void Meow()
-    {
-        Console.WriteLine("meooow!");
-    }
+    public string Title { get; set; }
+    public string Author { get; set; }
 }
 
-// High-level functions depend on concrete classes
-static void PrintDogNames(List<Dog> dogs)
+// High-level class: BookManager depends directly on DatabaseBookSaver
+public class BookManager
 {
-    foreach (var dog in dogs)
+    private readonly DatabaseBookSaver _bookSaver;
+
+    public BookManager()
     {
-        Console.WriteLine(dog.Name);
+        _bookSaver = new DatabaseBookSaver();
     }
-}
 
-static void PrintCatNames(List<Cat> cats)
-{
-    foreach (var cat in cats)
+    public void SaveBook(Book book)
     {
-        Console.WriteLine(cat.Name);
-    }
-}
-
-// Program entry point
-class Program
-{
-    static void Main(string[] args)
-    {
-        Dog dog = new Dog("Jack");
-        Cat cat = new Cat("Zoey");
-
-        List<Dog> dogs = new List<Dog> { dog };
-        List<Cat> cats = new List<Cat> { cat };
-
-        PrintDogNames(dogs); // Jack
-        PrintCatNames(cats); // Zoey
+        _bookSaver.Save(book);
     }
 }
 ```
 
-To fix this we can rewrite the code like this
+### Why does this violate DIP?
+- The BookManager class depends directly on the DatabaseBookSaver class.
+- If you want to save the book to a file or another storage system, you must modify the BookManager class.
+- This tight coupling makes the system inflexible and harder to test.
+
+### Refactored Code (Adhering to DIP)
+To adhere to DIP:
+- Create an abstraction (e.g., an interface) for saving books.
+- Both DatabaseBookSaver and FileBookSaver implement the abstraction.
+- The BookManager depends on the abstraction, not the concrete implementation.
 
 ```csharp
-using System;
-using System.Collections.Generic;
-
-// Define an abstraction for animals
-interface IAnimal
+// Abstraction for saving books
+public interface IBookSaver
 {
-    string Name { get; }
-    void MakeSound();
+    void Save(Book book);
 }
 
-// Dog class implementing IAnimal
-class Dog : IAnimal
+// Low-level class: DatabaseBookSaver implements IBookSaver
+public class DatabaseBookSaver : IBookSaver
 {
-    public string Name { get; }
-
-    public Dog(string name)
+    public void Save(Book book)
     {
-        Name = name;
-    }
-
-    public void MakeSound()
-    {
-        Console.WriteLine("woof! woof!! woof!!");
+        Console.WriteLine($"Saving {book.Title} to the database.");
     }
 }
 
-// Cat class implementing IAnimal
-class Cat : IAnimal
+// Low-level class: FileBookSaver implements IBookSaver
+public class FileBookSaver : IBookSaver
 {
-    public string Name { get; }
-
-    public Cat(string name)
+    public void Save(Book book)
     {
-        Name = name;
-    }
-
-    public void MakeSound()
-    {
-        Console.WriteLine("meooow!");
+        Console.WriteLine($"Saving {book.Title} to a file.");
     }
 }
 
-// High-level module depends on IAnimal abstraction
-static void PrintAnimalNames(IEnumerable<IAnimal> animals)
+// Book class
+public class Book
 {
-    foreach (var animal in animals)
-    {
-        Console.WriteLine(animal.Name);
-    }
+    public string Title { get; set; }
+    public string Author { get; set; }
 }
 
-// Program entry point
-class Program
+// High-level class: Depends on IBookSaver abstraction
+public class BookManager
 {
-    static void Main(string[] args)
+    private readonly IBookSaver _bookSaver;
+
+    public BookManager(IBookSaver bookSaver)
     {
-        IAnimal dog = new Dog("Jack");
-        IAnimal cat = new Cat("Zoey");
+        _bookSaver = bookSaver;
+    }
 
-        List<IAnimal> animals = new List<IAnimal> { dog, cat };
-
-        PrintAnimalNames(animals); // Jack, Zoey
+    public void SaveBook(Book book)
+    {
+        _bookSaver.Save(book);
     }
 }
+```
+
+### Usage Example:
+```csharp
+Book book = new Book { Title = "C# Basics", Author = "John Doe" };
+
+// Save to the database
+IBookSaver databaseSaver = new DatabaseBookSaver();
+BookManager dbManager = new BookManager(databaseSaver);
+dbManager.SaveBook(book);
+
+// Save to a file
+IBookSaver fileSaver = new FileBookSaver();
+BookManager fileManager = new BookManager(fileSaver);
+fileManager.SaveBook(book);
 ```

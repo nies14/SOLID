@@ -1,138 +1,143 @@
+## Interface Segregation Principle (ISP)
 The interface segregation principle states that clients should not be forced to implement interfaces or methods they do not use.This principle is fairly similar to the single responsibility principle (SRP). But it’s not just about a single interface doing only one thing – it’s about breaking the whole codebase into multiple interfaces or components.
 
-The following code violates the interface segregation principle
+### Why is ISP important?
+- Prevents implementing unnecessary methods that a class doesn’t need.
+- Promotes separation of concerns by creating smaller, focused interfaces.
+- Makes the codebase easier to maintain and understand.
+
+### Example:
+Scenario:
+You’re building a system with different types of books: PhysicalBook and EBook. Both share some common functionality, but each has unique features.
+
+Here’s an interface that violates ISP:
 
 ```csharp
-using System;
-
-class Animal
+public interface IBook
 {
-    public string Name { get; set; }
+    string Title { get; set; }
+    string Author { get; set; }
+    decimal Price { get; set; }
 
-    public Animal(string name)
+    void Print();
+    void Download();
+}
+```
+### Why is this bad?
+- The Print method is not relevant to EBook.
+- The Download method is not relevant to PhysicalBook.
+- Classes are forced to implement methods they don’t need.
+
+```csharp
+// PhysicalBook is forced to implement Download()
+public class PhysicalBook : IBook
+{
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public decimal Price { get; set; }
+
+    public void Print()
     {
-        Name = name;
+        Console.WriteLine($"Printing physical book: {Title}");
     }
 
-    public void Eat()
+    public void Download()
     {
-        Console.WriteLine($"{Name} is eating");
-    }
-
-    public virtual void Swim()
-    {
-        Console.WriteLine($"{Name} is swimming");
-    }
-
-    public virtual void Fly()
-    {
-        Console.WriteLine($"{Name} is flying");
+        throw new NotImplementedException("Physical books cannot be downloaded.");
     }
 }
 
-class Fish : Animal
+// EBook is forced to implement Print()
+public class EBook : IBook
 {
-    public Fish(string name) : base(name) { }
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public decimal Price { get; set; }
 
-    public override void Fly()
+    public void Print()
     {
-        Console.WriteLine("ERROR! Fishes can't fly");
+        throw new NotImplementedException("E-books cannot be printed.");
     }
-}
 
-class Bird : Animal
-{
-    public Bird(string name) : base(name) { }
-
-    public override void Swim()
+    public void Download()
     {
-        Console.WriteLine("ERROR! Birds can't swim");
-    }
-}
-
-class Program
-{
-    static void Main(string[] args)
-    {
-        Bird bird = new Bird("Titi the Parrot");
-        bird.Swim(); // ERROR! Birds can't swim
-
-        Fish fish = new Fish("Neo the Dolphin");
-        fish.Fly(); // ERROR! Fishes can't fly
+        Console.WriteLine($"Downloading e-book: {Title}");
     }
 }
 ```
+- Violating ISP leads to meaningless methods (NotImplementedException), confusing developers and increasing the chance of errors.
 
-This is how we can fix this
+### Refactored Code (Adhering to ISP)
+To follow ISP, split the IBook interface into smaller, more specific interfaces.
 
 ```csharp
-using System;
-
-// Define interfaces for different types of animals
-
-interface ISwimmer
+// General interface for all books
+public interface IBook
 {
-    void Swim();
+    string Title { get; set; }
+    string Author { get; set; }
+    decimal Price { get; set; }
 }
 
-interface IFlyer
+// Interface for printable books
+public interface IPrintable
 {
-    void Fly();
+    void Print();
 }
 
-// Base class for animals
-abstract class Animal
+// Interface for downloadable books
+public interface IDownloadable
 {
-    public string Name { get; set; }
-
-    public Animal(string name)
-    {
-        Name = name;
-    }
-
-    public void Eat()
-    {
-        Console.WriteLine($"{Name} is eating");
-    }
+    void Download();
 }
+```
+### Updated Classes:
 
-// Implement interfaces for specific types of animals
-
-class Bird : Animal, IFlyer
+```csharp
+// PhysicalBook implements IBook and IPrintable
+public class PhysicalBook : IBook, IPrintable
 {
-    public Bird(string name) : base(name) { }
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public decimal Price { get; set; }
 
-    public void Fly()
+    public void Print()
     {
-        Console.WriteLine($"{Name} is flying");
+        Console.WriteLine($"Printing physical book: {Title}");
     }
 }
 
-class Fish : Animal, ISwimmer
+// EBook implements IBook and IDownloadable
+public class EBook : IBook, IDownloadable
 {
-    public Fish(string name) : base(name) { }
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public decimal Price { get; set; }
 
-    public void Swim()
+    public void Download()
     {
-        Console.WriteLine($"{Name} is swimming");
+        Console.WriteLine($"Downloading e-book: {Title}");
     }
+}
+```
+### Usage Example:
+```csharp
+// Print logic only applies to printable books
+public void PrintBook(IPrintable printableBook)
+{
+    printableBook.Print();
+}
+
+// Download logic only applies to downloadable books
+public void DownloadBook(IDownloadable downloadableBook)
+{
+    downloadableBook.Download();
 }
 
 // Usage
+PhysicalBook physicalBook = new PhysicalBook { Title = "C# Basics", Author = "John Doe", Price = 100m };
+EBook ebook = new EBook { Title = "Advanced C#", Author = "Jane Smith", Price = 50m };
 
-class Program
-{
-    static void Main(string[] args)
-    {
-        Bird bird = new Bird("Titi the Parrot");
-        bird.Fly(); // Titi the Parrot is flying
-        bird.Eat(); // Titi the Parrot is eating
-
-        Console.WriteLine();
-
-        Fish fish = new Fish("Neo the Dolphin");
-        fish.Swim(); // Neo the Dolphin is swimming
-        fish.Eat(); // Neo the Dolphin is eating
-    }
-}
+PrintBook(physicalBook); // Works
+DownloadBook(ebook);     // Works
 ```
